@@ -7,13 +7,19 @@ import { AlertCircle, Loader2 } from "lucide-react";
 const GoogleAuthCallback = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     const processAuth = async () => {
       try {
-        // Obter código de autorização da URL
+        setIsProcessing(true);
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
+        const error = urlParams.get("error");
+
+        if (error) {
+          throw new Error(`Erro na autenticação: ${error}`);
+        }
 
         if (!code) {
           throw new Error("Código de autorização não encontrado");
@@ -21,12 +27,14 @@ const GoogleAuthCallback = () => {
 
         // Processar callback de autenticação
         await googleAuthService.handleCallback(code);
-
+        
         // Redirecionar de volta para a página principal
         navigate("/");
       } catch (error) {
         console.error("Erro ao processar autenticação:", error);
-        setError("Falha ao autenticar com o Google. Por favor, tente novamente.");
+        setError(error instanceof Error ? error.message : "Falha ao autenticar com o Google. Por favor, tente novamente.");
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -48,7 +56,9 @@ const GoogleAuthCallback = () => {
     <div className="flex items-center justify-center min-h-screen bg-muted/30">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Processando autenticação...</p>
+        <p className="text-muted-foreground">
+          {isProcessing ? "Processando autenticação..." : "Redirecionando..."}
+        </p>
       </div>
     </div>
   );

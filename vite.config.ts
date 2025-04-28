@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     // Configuração para lidar com rotas do React Router
-    base: '/',
+    base: "/",
     preview: {
       port: 8080,
       host: true
