@@ -5,11 +5,13 @@ import { Avatar } from "@/components/ui/avatar";
 import { AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChat } from "@/hooks/useChat";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Index = () => {
-  const { messages, isLoading, error, sendMessage, saveMessageToGoogleDocs } = useChat();
+  const { messages, isLoading, error, sendMessage, saveMessageToGoogleDocs, clearHistory } = useChat();
 
   return (
     <div className="flex h-screen bg-muted/30">
@@ -31,8 +33,25 @@ const Index = () => {
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
-        <header className="p-4 border-b bg-card">
+        <header className="p-4 border-b bg-card flex justify-between items-center">
           <h1 className="text-xl font-semibold">Chat com Orientador</h1>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={clearHistory}
+                  className="h-8 w-8"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Limpar histórico de conversas</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </header>
 
         <ScrollArea className="flex-1 p-4">

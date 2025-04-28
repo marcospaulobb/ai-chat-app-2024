@@ -24,5 +24,29 @@ export default defineConfig(({ mode }) => {
       "process.env": env,
     },
     assetsInclude: ["**/*.txt"],
+    build: {
+      outDir: "dist",
+      assetsDir: "assets",
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: undefined
+        }
+      },
+      // Garantir que o build seja otimizado para produção
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true
+        }
+      }
+    },
+    // Configuração para lidar com rotas do React Router
+    base: '/',
+    preview: {
+      port: 8080,
+      host: true
+    }
   };
 });

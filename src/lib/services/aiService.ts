@@ -2,6 +2,7 @@ import { env } from "@/config/env";
 import { advisorPrompt } from "@/config/advisorPrompt";
 import OpenAI from "openai";
 import { Message } from "@/types/chat";
+import { chatHistory } from "./chatHistory";
 
 const openai = new OpenAI({
   apiKey: env.openai.apiKey,
@@ -21,9 +22,6 @@ const formatResponse = (text: string): string => {
   
   return formatted.trim();
 };
-
-// Mensagem inicial padrão do professor
-const INITIAL_MESSAGE = "Sou o Prof. Guido Kahneman, um especialista em Economia Comportamental e programação em Python. Meu foco está em ajudar estudantes e pesquisadores a aprofundarem seus conhecimentos nestas áreas, orientando-os em seus projetos acadêmicos e pesquisas. Como posso auxiliá-lo hoje?";
 
 export const aiService = {
   async searchGoogle(query: string): Promise<string> {
@@ -49,25 +47,39 @@ export const aiService = {
 
   async generateResponse(message: string, context: string = ""): Promise<string> {
     try {
-      // Garante que o prompt do sistema seja sempre enviado primeiro
+      // Obtém o histórico de mensagens
+      const history = chatHistory.getHistory();
+      
+      // Prepara as mensagens para o OpenAI
       const messages = [
         { 
           role: "system", 
           content: `${advisorPrompt}\n\nIMPORTANTE: Ao responder, siga estas regras de formatação:\n1. Use quebras de linha duplas (\\n\\n) entre parágrafos\n2. Use quebras de linha simples (\\n) para listas\n3. Não use asteriscos entre frases\n4. Use markdown para títulos (# para títulos principais, ## para subtítulos)\n5. Use - para listas com marcadores\n6. Use 1. 2. 3. para listas numeradas\n7. Mantenha um espaço em branco antes e depois de cada título\n8. Mantenha um espaço em branco antes e depois de cada lista`,
-        },
-        { 
-          role: "assistant", 
-          content: INITIAL_MESSAGE
-        },
-        { 
+        }
+      ];
+      
+      // Adiciona o histórico de mensagens (limitado a 5 mensagens para não exceder o limite de tokens)
+      const recentHistory = history.slice(-5);
+      for (const msg of recentHistory) {
+        messages.push({
+          role: msg.isAdvisor ? "assistant" : "user",
+          content: msg.content
+        });
+      }
+      
+      // Adiciona o contexto da busca
+      if (context) {
+        messages.push({ 
           role: "user", 
           content: `Contexto adicional: ${context}` 
-        },
-        { 
-          role: "user", 
-          content: message 
-        },
-      ];
+        });
+      }
+      
+      // Adiciona a mensagem atual
+      messages.push({ 
+        role: "user", 
+        content: message 
+      });
 
       const completion = await openai.chat.completions.create({
         model: env.openai.model,
@@ -92,12 +104,18 @@ export const aiService = {
       // Gera resposta usando OpenAI com o contexto da busca
       const response = await this.generateResponse(message, searchResults);
 
-      return {
+      // Cria o objeto de mensagem
+      const messageObj: Message = {
         id: Date.now(),
         content: response,
         isAdvisor: true,
         timestamp: new Date().toLocaleTimeString().slice(0, 5),
       };
+      
+      // Adiciona a mensagem ao histórico
+      chatHistory.addMessage(messageObj);
+
+      return messageObj;
     } catch (error) {
       console.error("Erro ao processar mensagem:", error);
       return {
@@ -109,7 +127,7 @@ export const aiService = {
     }
   },
 
-  private formatResponse(response: string): string {
+  formatResponse(response: string): string {
     // Primeiro, vamos dividir o texto em parágrafos
     let paragraphs = response.split(/\n+/);
     
@@ -148,15 +166,10 @@ export const aiService = {
     formattedText = formattedText.replace(/\n{2,}/g, '\n\n');
     
     // Garantir que o texto comece com uma quebra de linha
-    if (!formattedText.startsWith('\n')) {
-      formattedText = '\n' + formattedText;
+    if (!formattedText.startsWith('\n\n')) {
+      formattedText = '\n\n' + formattedText;
     }
     
-    // Garantir que o texto termine com uma quebra de linha
-    if (!formattedText.endsWith('\n')) {
-      formattedText = formattedText + '\n';
-    }
-    
-    return formattedText.trim();
+    return formattedText;
   }
 }; 

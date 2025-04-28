@@ -1,47 +1,32 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "buildCommand": "npm run build",
-        "outputDirectory": "dist"
-      }
-    }
-  ],
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "outputDirectory": "dist",
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/assets/(.*)",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "continue": true
+    },
+    {
+      "src": "/auth/google/callback",
       "dest": "/index.html"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html",
+      "status": 200
     }
   ],
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
-    }
-  ],
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
-      ]
     }
   ]
 } 

@@ -1,24 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Message, ChatState } from "@/types/chat";
 import { advisorService } from "@/lib/services/advisorService";
 import { googleDocsService } from "@/lib/services/googleDocsService";
 import { googleAuthService } from "@/lib/services/googleAuthService";
 import { useToast } from "@/hooks/use-toast";
+import { chatHistory } from "@/lib/services/chatHistory";
 
 export const useChat = () => {
   const { toast } = useToast();
   const [state, setState] = useState<ChatState>({
-    messages: [
-      {
-        id: 1,
-        content: "Olá! Como posso ajudar você hoje?",
-        isAdvisor: true,
-        timestamp: new Date().toLocaleTimeString().slice(0, 5)
-      }
-    ],
+    messages: [],
     isLoading: false,
     error: null
   });
+
+  // Carrega o histórico ao inicializar
+  useEffect(() => {
+    const history = chatHistory.getHistory();
+    if (history.length > 0) {
+      setState(prev => ({
+        ...prev,
+        messages: history
+      }));
+    }
+  }, []);
 
   const sendMessage = async (content: string) => {
     try {
@@ -32,10 +37,12 @@ export const useChat = () => {
         timestamp: new Date().toLocaleTimeString().slice(0, 5)
       };
 
+      // Adiciona a mensagem do usuário ao estado e ao histórico
       setState(prev => ({
         ...prev,
         messages: [...prev.messages, userMessage]
       }));
+      chatHistory.addMessage(userMessage);
 
       // Obtém resposta do orientador
       const advisorResponse = await advisorService.sendMessage(content);
@@ -123,11 +130,20 @@ export const useChat = () => {
     }
   };
 
+  const clearHistory = () => {
+    chatHistory.clearHistory();
+    setState(prev => ({
+      ...prev,
+      messages: []
+    }));
+  };
+
   return {
     messages: state.messages,
     isLoading: state.isLoading,
     error: state.error,
     sendMessage,
-    saveMessageToGoogleDocs
+    saveMessageToGoogleDocs,
+    clearHistory
   };
 }; 
